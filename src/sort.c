@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
    */
   srand ( time( NULL ) );
   
-  /* Create a shufled array of N elements. */
+  /* Create a shuffled array of N elements. */
   int len = atoi(argv[1]);
   int *array = GetShuffledArray( len );
   
