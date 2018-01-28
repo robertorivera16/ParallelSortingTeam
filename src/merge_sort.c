@@ -1,210 +1,147 @@
 /*Merge Sort File*/
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <omp.h>
 
 
-/* ==========================================================================
- * COMPARATORS
- * ========================================================================== */
+void run_omp(int a[], int size, int temp[], int threads) {
+    // Enable nested parallelism, if available
+    omp_set_nested(1);
+    // Parallel mergesort
+    mergesort_parallel(a, size, temp, threads);
 
-/* A comparator function pointer type that we can pass to sort functions. */
-typedef int (*IntComparator)(int a, int b);
-
-/* Function: AscendingOrder(int a, int b)
- * Usage: int *sortedArray = BubbleSort( array, len, AscendingOrder );
- * -----------------------------------------------------------------------------
- * A comparator function that causes an array's values to be sorted in ascending 
- * order. Returns a positive value if a > b, 0 if a == b, and a negative value 
- * if a < b.
- */
-int AscendingOrder(int a, int b) {
-  return a - b;
 }
 
-/* Function: DescendingOrder(int a, int b)
- * Usage: int *sortedArray = BubbleSort( array, len, DescendingOrder );
- * -----------------------------------------------------------------------------
- * A comparator function that causes an array's values to be sorted in 
- * descending order. Returns a negative value if a > b, 0 if a == b, and a 
- * positive value if a < b.
- */
-int DescendingOrder(int a, int b) {
-  return b - a;
-}
-
-/* Function: RandomOrder(int a, int b)
- * Usage: int *sortedArray = BubbleSort( array, len, RandomOrder );
- * -----------------------------------------------------------------------------
- * A comparator function that causes an array's values to be shuffled in 
- * random order.
- */
-int RandomOrder(int a, int b) {
-  #define MAX 4
-  return (rand() % MAX) - (MAX/2);
-}
-
-
-/* ==========================================================================
- * HELPER FUNCTIONS
- * ========================================================================== */
-
-/* Function: PrintArray(int *array, int len)
- * Usage: PrintArray( array, len );
- * -----------------------------------------------------------------------------
- * Prints the provided array to the console. The len parameter should equal the 
- * number of elements in the array.
- */
-void PrintArray(int *array, int len) {
-  for ( int i = 0; i < len; ++i ) {
-    printf( "%d ", array[i] );
-  }
-  printf("\n");
-}
-
-/* Function: DuplicateArray( int *array, int len )
- * Usage: int *dupArray = DuplicateArray( array, len );
- * -----------------------------------------------------------------------------
- * Returns a deep copy of the provided array, where len is the number of 
- * elements in the array. The copy is allocated on the heap; it should be freed 
- * by the caller after use.
- */
-int *DuplicateArray(int *array, int len) {
-  int *result = malloc( len * sizeof(int) );
-  memcpy( result, array, len * sizeof(int) );
-  return result;
-}
-
-/* Function: SwapElements(int *a, int *b)
- * Usage: SwapElements( &array[0], &array[1] );
- * -----------------------------------------------------------------------------
- * A helper function that swaps two integers in memory.
- */
-void SwapElements(int *a, int *b) {
-  int temp = *a;
-  *a = *b;
-  *b = temp;
-}
-
-
-/* ==========================================================================
- * SORTING ALGORITHMS
- * ========================================================================== */
-
-typedef int* (*SortFunction)(int *array, int len, IntComparator cmp);
-
-
-int *BubbleSort(int *array, int len, IntComparator cmp) {
-  
-  int *result = DuplicateArray( array, len );
-  
-  for ( int i = len - 1; i > 0; --i ) {
-    for ( int j = 0; j < i; ++j ) {
-      if ( cmp( result[j], result[j+1] ) > 0 ) {
-        SwapElements( &result[j], &result[j+1] );
-      }
+void merge(int a[], int size, int temp[]) {
+    int i1 = 0;
+    int i2 = size/2;
+    int tempi = 0;
+    while (i1 < size/2 && i2 < size) {
+        if (a[i1] < a[i2]) {
+            temp[tempi] = a[i1];
+            i1++;
+        } else {
+            temp[tempi] = a[i2];
+            i2++;
+        }
+        tempi++;
     }
-  }
-  
-  return result;
-}
-
-
-int *SelectionSort(int *array, int len, IntComparator cmp) {
-  
-  int *result = DuplicateArray( array, len );
-  
-  for ( int i = 0; i < len; ++i ) {
-    int minIndex = i;
-    
-    for ( int j = i + 1; j < len; ++j ) {
-      if ( cmp( result[j], result[minIndex] ) < 0 ) {
-        minIndex = j;
-      }
+    while (i1 < size/2) {
+        temp[tempi] = a[i1];
+        i1++;
+        tempi++;
     }
-    
-    SwapElements( &result[i], &result[minIndex] );
-  }
-  
-  return result;
-}
-
-
-int *InsertionSort(int *array, int len, IntComparator cmp) {
-  int *result = DuplicateArray( array, len );
-  
-  for ( int i = 1; i < len; ++i ) {
-    int valueToInsert = result[i];
-    int holePos = i;
-    
-    while ( holePos > 0 && valueToInsert < result[holePos - 1]) {
-      SwapElements( &result[holePos], &result[holePos - 1] );
-      holePos -= 1;
+    while (i2 < size) {
+        temp[tempi] = a[i2];
+        i2++;
+        tempi++;
     }
-    
-    result[holePos] = valueToInsert;
+    // Copy sorted temp array into main array, a
+    memcpy(a, temp, size*sizeof(int));
+}
+
+void mergesort_serial(int a[], int size, int temp[]) {
+       
+    mergesort_serial(a, size/2, temp);
+    mergesort_serial(a + size/2, size - size/2, temp);
+    // The above call will not work properly in an OpenMP program
+    // Merge the two sorted subarrays into a temp array
+    merge(a, size, temp);
+}
+
+
+void mergesort_parallel(int a[], int size, int temp[], int threads) {
+
+    if ( threads == 1) {
+//        printf("Thread %d begins serial merge sort\n", omp_get_thread_num());
+      mergesort_serial(a, size, temp);
+    } else if (threads > 1) {
+       #pragma omp parallel sections num_threads(2)
+       {
+//            printf("Thread %d begins recursive section\n", omp_get_thread_num());
+      #pragma omp section
+            { //printf("Thread %d begins recursive call\n", omp_get_thread_num());
+
+      mergesort_parallel(a, size/2, temp, threads/2);}
+      #pragma omp section
+            { //printf("Thread %d begins recursive call\n", omp_get_thread_num());
+      mergesort_parallel(a + size/2, size - size/2, temp + size/2, threads - threads/2);}
+
+      // The above use of temp + size/2 is an essential change from the serial version  
+       }
+     // Thread allocation is implementation dependent
+       // Some threads can execute multiple sections while others are idle 
+       // Merge the two sorted sub-arrays through temp
+       merge(a, size, temp); 
+    } else {
+       printf("Error: %d threads\n", threads); 
+       return;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    puts("-OpenMP Recursive Mergesort-\t");
+    // Check arguments
+    if ( argc != 3 ) /* argc must be 3 for proper execution! */
+    {
+        printf( "Usage: %s array-size number-of-threads\n", argv[0]);
+        return 1;
+    }
+  // Get arguments
+    int size = atoi(argv[1]); // Array size 
+    int threads = atoi(argv[2]); // Requested number of threads
+  // Check nested parallelism availability
+  omp_set_nested(1);
+    if (omp_get_nested() !=1 )
+    {
+    puts("Warning: Nested parallelism desired but unavailable");
+    } 
+  // Check processors and threads
+    int processors = omp_get_num_procs(); // Available processors
+    printf("Array size = %d\nProcesses = %d\nProcessors = %d\n", size, threads, processors);
+    if (threads > processors) 
+    {
+        printf( "Warning: %d threads requested, will run_omp on %d processors available\n", threads, processors);
+    omp_set_num_threads(threads);
+    }
+    int max_threads = omp_get_max_threads(); // Max available threads
+    if (threads > max_threads) // Requested threads are more than max available
+    {
+        printf( "Error: Cannot use %d threads, only %d threads available\n", threads, max_threads);
+    return 1;
   }
-  
-  return result;
-}
-
-
-/* ==========================================================================
- * MAIN PROGRAM
- * ========================================================================== */
-
-int *GetShuffledArray(int len) {
-  int *array = malloc( len * sizeof(int) );
-  
-  for (int i = 0; i < len; ++i) {
-    array[i] = i;
-  }
-  
-  return SelectionSort( array, len, RandomOrder );
-}
-
-/* Function: DoSort(int *array, int len, char *algorithmName,
- *                  SortFunction sortFunc, IntComparator cmp)
- * Usage: DoSort( array, len, "BubbleSort", BubbleSort, AscendingOrder );
- * -----------------------------------------------------------------------------
- * A wrapper function that runs the specified sorting algorithm on the provided 
- * array, printing both the original unsorted array and the final sorted array.
- */
-void DoSort(int *array, int len, char *algorithmName,
-            SortFunction sortFunc, IntComparator cmp) {
-  printf("\n---------------------------------------------------------------\n");
-  printf("%s\n", algorithmName);
-  printf("---------------------------------------------------------------\n");
-  
-  printf("Before: ");
-  PrintArray( array, len );
-  
-  int *sortedArray = sortFunc( array, len, cmp );
-  
-  printf("After:  ");
-  PrintArray( sortedArray, len );
-  
-  free( sortedArray );
-}
-
-int main(int argc, char *argv[]) {
-  
-  /* Seeds the random number generator in case the RandomOrder comparator is 
-   * needed.
-   */
-  srand ( time( NULL ) );
-  
-  /* Create a shuffled array of N elements. */
-  int len = atoi(argv[1]);
-  int *array = GetShuffledArray( len );
-  
-  DoSort( array, len, "BubbleSort",     BubbleSort,    AscendingOrder );
-  DoSort( array, len, "Selection Sort", SelectionSort, AscendingOrder );
-  DoSort( array, len, "Insertion Sort", InsertionSort, AscendingOrder );
-  
-  free( array );
-  
-  return 0;
+    // Array allocation
+    int* a    = malloc(sizeof(int)*size);
+    int* temp = malloc(sizeof(int)*size);
+    if (a == NULL || temp == NULL) 
+    {
+    printf( "Error: Could not allocate array of size %d\n", size);
+    return 1;
+    }
+    // Random array initialization
+    int i;
+    srand(time(NULL));
+    for(i=0; i<size; i++) {
+        a[i] = rand() % size;
+    }
+  // Sort
+    double start = omp_get_wtime();
+  run_omp(a, size, temp, threads);
+    double end = omp_get_wtime( );
+    printf("Start = %.2f\nEnd = %.2f\nElapsed = %.2f\n",
+    start, end, end - start);
+  // Result check
+    for(i=1; i<size; i++) {
+        if (!(a[i-1] <= a[i])) {
+            printf("Implementtion error: a[%d]=%d > a[%d]=%d\n", i-1, a[i-1], i, a[i]);
+            return 1;
+        }
+    }
+    puts("-Success-");
+    double wtick = omp_get_wtick( );
+    printf("Wtick = %.8f\n1/Wtick = %.8f\n",
+    wtick, 1.0 / wtick);
+    return 0;
 }
