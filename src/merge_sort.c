@@ -10,7 +10,8 @@ void run_omp(int a[], int size, int temp[], int threads) {
     // Enable nested parallelism, if available
     omp_set_nested(1);
     // Parallel mergesort
-    mergesort_parallel_omp(a, size, temp, threads);
+    mergesort_parallel(a, size, temp, threads);
+
 }
 
 void merge(int a[], int size, int temp[]) {
@@ -50,7 +51,9 @@ void mergesort_serial(int a[], int size, int temp[]) {
     merge(a, size, temp);
 }
 
-void mergesort_parallel_omp(int a[], int size, int temp[], int threads) {
+
+void mergesort_parallel(int a[], int size, int temp[], int threads) {
+
     if ( threads == 1) {
 //        printf("Thread %d begins serial merge sort\n", omp_get_thread_num());
       mergesort_serial(a, size, temp);
@@ -60,10 +63,12 @@ void mergesort_parallel_omp(int a[], int size, int temp[], int threads) {
 //            printf("Thread %d begins recursive section\n", omp_get_thread_num());
       #pragma omp section
             { //printf("Thread %d begins recursive call\n", omp_get_thread_num());
-      mergesort_parallel_omp(a, size/2, temp, threads/2);}
+
+      mergesort_parallel(a, size/2, temp, threads/2);}
       #pragma omp section
             { //printf("Thread %d begins recursive call\n", omp_get_thread_num());
-      mergesort_parallel_omp(a + size/2, size - size/2, temp + size/2, threads - threads/2);}
+      mergesort_parallel(a + size/2, size - size/2, temp + size/2, threads - threads/2);}
+
       // The above use of temp + size/2 is an essential change from the serial version  
        }
      // Thread allocation is implementation dependent
