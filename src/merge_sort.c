@@ -150,6 +150,12 @@ int *InsertionSort(int *array, int len, IntComparator cmp) {
   return result;
 }
 
+int *MergeSort(int *array, int len, IntComparator cmp){
+  int *result = DuplicateArray( array, len );
+  
+
+}
+
 
 /* ==========================================================================
  * MAIN PROGRAM
