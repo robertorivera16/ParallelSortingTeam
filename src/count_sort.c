@@ -225,23 +225,26 @@ void DoSort(int *array, int len, char *algorithmName,
 
 int main(int argc, char *argv[]) {
 
-  /* Seeds the random number generator in case the RandomOrder comparator is 
-   * needed.
-   */
-  srand ( time( NULL ) );
+  
   
   /* Create a shuffled array of N elements. */
   //int len = atoi(argv[1]);
   //int *array = GetShuffledArray( len );
   int *arr = (int *) malloc(N * sizeof(int));
   int count = 0;
+  int i;
+  printf("TEST");
+
 
   for (i=0; i<N; i++){
     arr[i] = 0;
   }
 
+  printf("TEST");
+
   FILE *file;
   file = fopen(path,"r");
+  printf("TEST");
 
   if(!file){
     perror("Error opening file");
@@ -249,7 +252,7 @@ int main(int argc, char *argv[]) {
   }
 
   while (!feof(file) && (count < N)){
-    fscanf(file, "%d", arr[count++]);
+    fscanf(file, "%d", &arr[count++]);
   }
   fclose(file);
 
@@ -266,7 +269,7 @@ int main(int argc, char *argv[]) {
   // DoSort( array, len, "Insertion Sort", InsertionSort, AscendingOrder );
   
 
-  free( array );
+  free( arr );
   
   return 0;
 }
