@@ -1,9 +1,9 @@
 /*Merge Sort File*/
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <omp.h>
 
 
 /* ==========================================================================
