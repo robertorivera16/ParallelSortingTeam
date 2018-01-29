@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #define RANGE 999
-#define path "file.dat"
-#define N 1010228
+#define path "../data/T10I4D100K.txt"
+#define N 2020456
 
 
 /* ==========================================================================
@@ -156,31 +156,29 @@ int *InsertionSort(int *array, int len, IntComparator cmp) {
 int *countSort(int *arr)
 {
     // The output character array that will have sorted arr
-  int i, j;
   int *B = (int *) malloc(N * sizeof(int));
   int *C = (int *) malloc((RANGE + 1) * sizeof(int));
   
   //Initialize every position of Count Array to zero
-  for (i=0; i<=RANGE; i++){
+  for (int i=0; i<=RANGE; i++){
     C[i] = 0;
   }
-
-  for (j=0; j<N; j++){
+  for (int j=0; j<N; j++){
     C[arr[j]] = C[arr[j]] + 1;
 
   }
-
-  for (i=1; i<RANGE+1; i++){
-    C[i] = C[i] + C[i-1];
+  
+  for (int y=1; y<RANGE+1; y++){
+    C[y] = C[y] + C[y-1];
   }
 
-
-  for (j=N-1; j>=0; j--){
-    B[C[arr[j]]-1] = arr[j];
-    C[arr[j]] = C[arr[j]] - 1;
+   
+  for (int x=N-1; x>=0; x--){
+    B[C[arr[x]]-1] = arr[x];
+    C[arr[x]] = C[arr[x]] - 1;
   }
 
-  return C;
+  return B;
 
 }
 
@@ -233,18 +231,21 @@ int main(int argc, char *argv[]) {
   int *arr = (int *) malloc(N * sizeof(int));
   int count = 0;
   int i;
-  printf("TEST");
+  struct timeval t1, t2;
+  double elapsedTime;
+
+ 
 
 
   for (i=0; i<N; i++){
     arr[i] = 0;
   }
 
-  printf("TEST");
+
 
   FILE *file;
   file = fopen(path,"r");
-  printf("TEST");
+
 
   if(!file){
     perror("Error opening file");
@@ -256,11 +257,27 @@ int main(int argc, char *argv[]) {
   }
   fclose(file);
 
-  printf("Size: %d\n", count);
-  for(i = 0; i < count; i++)
-  {
-    printf("arr[%d] = %d\n", i, arr[i]);
-  }
+  //Test LOOP to see read numbers
+  // printf("Size: %d\n", count);
+  // for(i = 0; i < count; i++)
+  // {
+  //   printf("arr[%d] = %d\n", i, arr[i]);
+  // }
+  
+  gettimeofday(&t1, NULL);
+  int *result = countSort(arr);
+  gettimeofday(&t2, NULL);
+
+
+  elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+  elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+  printf("Elapsed time: %.3lf\n", elapsedTime );
+
+  //Test LOOP to print sorted array
+  // for(i = 0; i < N; i++)
+  // {
+  //   printf("result[%d] = %d\n", i, result[i]);
+  // }
 
 
   
