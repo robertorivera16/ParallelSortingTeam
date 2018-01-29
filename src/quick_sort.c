@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 
 
 /* ==========================================================================
@@ -130,7 +131,7 @@ int *SelectionSort(int *array, int len, IntComparator cmp) {
   
   return result;
 }
-
+ 
 
 int *InsertionSort(int *array, int len, IntComparator cmp) {
   int *result = DuplicateArray( array, len );
@@ -148,6 +149,44 @@ int *InsertionSort(int *array, int len, IntComparator cmp) {
   }
   
   return result;
+}
+
+
+void swap(int *a, int *b) {
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+int partition(int *array, int low, int high, int pivot, IntComparator cmp) {
+	int cur = low;
+	swap(&array[pivot], &array[high]);
+
+	while (low <= high) {
+		if(cmp(array[low] ,array[high])<0) {
+			swap(&array[low], &array[cur]);
+			cur++;
+		}
+		low++;
+	}
+	swap(&array[cur], &array[high]);
+	return cur;
+}
+
+void qsortLH(int *array, int low, int high,IntComparator cmp) {
+	if(low <= high) {
+		int pivot = low;
+		
+		pivot = partition(array, low, high, pivot,cmp);
+		qsortLH(array, low, pivot - 1,cmp);
+		qsortLH(array, pivot + 1, high, cmp);
+	}
+}
+
+int *QuickSort(int *array, int len, IntComparator cmp){
+  int *result = DuplicateArray( array, len);
+    qsortLH(result, 0, len-1, cmp);
+    return result;
 }
 
 
@@ -172,19 +211,30 @@ int *GetShuffledArray(int len) {
  * A wrapper function that runs the specified sorting algorithm on the provided 
  * array, printing both the original unsorted array and the final sorted array.
  */
-void DoSort(int *array, int len, char *algorithmName,
-            SortFunction sortFunc, IntComparator cmp) {
+void DoSort(int *array, int len, char *algorithmName, SortFunction sortFunc, IntComparator cmp) {
+
+  struct timeval t1, t2;
+  double elapsedTime;
+
   printf("\n---------------------------------------------------------------\n");
   printf("%s\n", algorithmName);
   printf("---------------------------------------------------------------\n");
   
-  printf("Before: ");
-  PrintArray( array, len );
-  
+ // printf("Before: ");
+//PrintArray( array, len );
+
+
+     gettimeofday(&t1, NULL);
   int *sortedArray = sortFunc( array, len, cmp );
+    gettimeofday(&t2, NULL);
+
+
   
-  printf("After:  ");
-  PrintArray( sortedArray, len );
+ // printf("After:  ");
+ // PrintArray( sortedArray, len );
+        elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    printf("Elapsed time: %.3lf\n", elapsedTime );
   
   free( sortedArray );
 }
@@ -199,10 +249,11 @@ int main(int argc, char *argv[]) {
   /* Create a shuffled array of N elements. */
   int len = atoi(argv[1]);
   int *array = GetShuffledArray( len );
-  
-  DoSort( array, len, "BubbleSort",     BubbleSort,    AscendingOrder );
-  DoSort( array, len, "Selection Sort", SelectionSort, AscendingOrder );
-  DoSort( array, len, "Insertion Sort", InsertionSort, AscendingOrder );
+
+  //DoSort( array, len, "BubbleSort",     BubbleSort,    AscendingOrder );
+  //DoSort( array, len, "Selection Sort", SelectionSort, AscendingOrder );
+  //DoSort( array, len, "Insertion Sort", InsertionSort, AscendingOrder );
+  DoSort( array, len, "Quick Sort", QuickSort, AscendingOrder );
   
   free( array );
   
